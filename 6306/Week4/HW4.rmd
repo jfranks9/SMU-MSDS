@@ -1,0 +1,38 @@
+---
+title: "Week 4"
+author: "Jonathan Franks"
+date: "February 4, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+###Question 1
+
+#### Part A-D
+
+```{r}
+#install.packages("fivethirtyeight")
+library("fivethirtyeight")
+data(package = "fivethirtyeight")
+vignette("fivethirtyeight", package = "fivethirtyeight")
+df <- college_recent_grads
+str(df)
+```
+
+News link: https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/
+
+###Question 2
+
+####
+
+```{r}
+library("dplyr")
+colnames(df)
+ncol(df)
+major_count <- table(df$major_category)
+par(las=2) 
+barplot(major_count, main="Recent College Grad Majors", xlab="Number of Grads", ylab="Major Categorys", horiz=TRUE, col=c("darkblue"))
+```
+
