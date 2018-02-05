@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("fivethirtyeight")
 library("fivethirtyeight")
 data(package = "fivethirtyeight")
-vignette("fivethirtyeight", package = "fivethirtyeight")
+#vignette("fivethirtyeight", package = "fivethirtyeight")
 df <- college_recent_grads
 str(df)
 ```
@@ -28,11 +28,17 @@ News link: https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-
 ####
 
 ```{r}
-library("dplyr")
+#library("dplyr")
 colnames(df)
 ncol(df)
 major_count <- table(df$major_category)
 par(las=2) 
-barplot(major_count, main="Recent College Grad Majors", xlab="Number of Grads", ylab="Major Categorys", horiz=TRUE, col=c("darkblue"))
+barplot(major_count, main="Recent College Grad Majors", xlab="Number of Grads", horiz=TRUE, col=c("darkblue"))
+title(ylab="Major Categories", line=0, cex.lab=.9)
+write.csv(df, "df.csv", row.names=FALSE)
 ```
+
+###Question 3
+
+https://github.com/jfranks9/SMU-MSDS/
 
