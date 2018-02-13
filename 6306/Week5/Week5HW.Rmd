@@ -15,22 +15,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ###Question 1
 
 ####Part a
-
 ```{r}
 df <- read.table(file="yob2016.txt", header= FALSE, sep=";")
 colnames(df) = c("Name", "Sex", "N")
 ```
 
 ####Part b
-
 ```{r}
 str(df)
 summary(df)
 ```
 
-####Part c and d
+####Part c
 ```{r}
 grep("*yyy", df$Name)
+y2016 <-df[-212,]
+```
+
+####Part d
+```{r}
 y2016 <-df[-212,]
 ```
 
@@ -68,6 +71,7 @@ head(Final,10)
 ####Part c
 ```{r}
 Final <- Final[Final$Sex=="F",]
+head(Final,10)
 ```
 ####Part d
 ```{r}
@@ -75,3 +79,4 @@ write.table(Final[0:10,c("Name","Total")],"Names.csv")
 ```
 
 
+GITHUB:https://github.com/jfranks9/SMU-MSDS/tree/master/6306/Week5
