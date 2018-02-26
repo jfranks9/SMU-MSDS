@@ -1,0 +1,81 @@
+---
+title: "Case Study 1"
+author: "Jonathan Franks"
+date: "February 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Introduction
+Each State contains its own unique drinking culture. An exploration of this culture can be done with data sets provided. These data sets will allow us to explore each states beer appetite by answering these questions: how many breweries are in each state, the median Alcohol by Volume (ABV) and median International Bitterness Unit(IBU) for each state, which state has the highest ABV, which state has the highest IBU. We will also explore the relationship between ABV and IBU with a scatter plot.The results are provided to help you make your own judgements about each states drinking culture. 
+
+###Data Manipulation
+It is necessary to begin this analyses by cleaning up the data. First we will import the data sets and then create an merged collection for future use.
+
+```{r}
+library("plyr")
+library("ggplot2")
+Breweries <- read.csv(file="Data/Breweries.csv", header= TRUE)
+Beers <- read.csv(file="Data/Beers.csv", header= TRUE)
+colnames(Breweries)[colnames(Breweries)=="Name"] <- "Brewery Name"
+colnames(Beers)[colnames(Beers)=="Name"] <- "Beer Name"
+colnames(Breweries)[colnames(Breweries)=="Brew_ID"] <- "Brewery_id"
+
+BB <-merge(Breweries,Beers,by="Brewery_id")
+
+```
+
+###Merged Data Set Verification
+It is important to verify the data after merging to ensure nothing went wrong during the process and to catch any mistakes that may have been made.
+
+```{r}
+head(BB,6)
+tail(BB, 6)
+```
+
+###Breweries Per State
+From the data below, we can find the five states with the most breweries and the five states with the least breweries. Comparatively we have the highest breweries per state, Colorado with 47 breweries and DC the state with the fewest at 1 brewery.
+
+```{r}
+StateBrew <- count(Breweries, 'State')
+StateBrew <- arrange(StateBrew,freq)
+head(StateBrew,5)
+tail(StateBrew, 5)
+```
+
+###Missing Data Values
+Checking the merged data set for NA values provides the following results. It is interesting to note that the IBU variable contains the most significant number of NA's.
+
+```{r}
+colSums(is.na(BB))
+```
+
+###Highest IBU and ABV
+The state with the highest IBU rated beer is Oregon with the Bitter Bitch Imperial IPA by Astoria Brewing Company. The state with the highest ABV beer is Colorado with the Lee Hill Series Vol. 5 by Upslope Brewing Company.
+
+```{r}
+IBU <- subset(BB, !is.na(IBU))
+IBU <- arrange(IBU, IBU )
+tail(IBU,1)
+
+ABV <- subset(BB, !is.na(ABV))
+ABV <- arrange(ABV, ABV )
+tail(ABV,1)
+summary(ABV$ABV)
+```
+
+###IBU vs ABV
+The scatterplot shows a roughly linear date set that contains a slightly cone shape.
+There are outliers that would cast doubt on this relationship with having high ABV and moderate to low IBU. However, there are almost no high IBU beers without an higher ABV.
+
+```{r}
+BBPlot <- subset(BB, !is.na(IBU))
+BBPlot <- subset(BBPlot, !is.na(ABV))
+ggplot(BBPlot, aes(x=IBU, y=ABV)) + geom_point() + geom_smooth(method = lm, se = FALSE) + labs(title = "IBU vs ABV", x = "IBU", y = "ABV")
+```
+
+
+
