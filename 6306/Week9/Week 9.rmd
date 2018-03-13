@@ -1,0 +1,74 @@
+---
+title: "Week 9"
+author: "Jonathan Franks"
+date: "March 12, 2018"
+output: html_document
+---
+
+###Question 1 "Harry Potter Cast"
+```{r}
+# Pulling from online - part a
+url <- 'http://www.imdb.com/title/tt1201607/fullcredits?ref_=tt_ql_1'
+webpage<- read_html(url)
+# Identifying HTML nodes - part b
+Actor_table<-html_nodes(webpage, '.itemprop')
+Actor<-html_text(Actor_table)
+Character_table<-html_nodes(webpage, '.character')
+Character<-html_text(Character_table)
+# Converting scraped text to Data Frame - part c
+ActDF<-data.frame(Actor)
+CharDF<-data.frame(id=1:length(Character),Character)
+colnames(ActDF)[1] <- "Name"
+#Cleaning Character Data
+Char <- CharDF[1:92,]
+Char <- lapply(Char, gsub, pattern='\n', replacement='')
+Char <- lapply(Char, trimws)
+Char <- lapply(Char, gsub, pattern='\\s+', replacement=' ')
+CharF <-data.frame(id=1:length(Char$Character),Character=Char$Character)
+#Cleaning Actor Data
+Credits <- ActDF[1:182,]
+toDelete <- seq(1, length(Credits), 2)
+Credits <- Credits[-toDelete]
+id<-length(Credits)
+Credits <- data.frame(id=1:id, Name=Credits)
+#Splitting Actor Names  - part d
+clean<-Credits %>%
+  separate(Name, into=c("FirstName", "SurName"),sep="[ ](?=[^ ]+$)")
+#Merging Character and Actors
+total <- merge(clean,CharF, by='id')
+Final<- total[,2:4]
+#Print the first 10 rows - part e
+head(Final,10) 
+```
+
+###Question 2 "Sports Ball"
+
+```{r}
+# Pulling from online - part a
+url <- 'http://www.espn.com/nba/team/stats/_/name/sa/san-antonio-spurs'
+webpage<- read_html(url)
+# Identifying HTML nodes - part b
+SS_table<-html_nodes(webpage,xpath='//*[@id="my-players-table"]/div[3]/div[3]/table')
+SS<-html_table(SS_table)
+# Cleaning up the Data  - part c
+SS <-data.frame(SS)
+SSH <- SS[2,]
+SST <- SS[3:length(SS),]
+colnames(SST) <- SSH
+#Splitting Player into Name and Position
+SST<-SST %>%
+  separate(PLAYER, into=c("Name", "Position"),sep=",")
+# Setting the correct data types
+SST<-data.frame(SST)
+col<-ncol(SST)
+SST[,3:col] <- sapply(SST[,3:col], as.numeric)
+#create barplot - part d
+data <- data.frame(SST$Name,SST$Position,SST$FG.)
+dataN=c('Name', 'Position','FGP')
+colnames(data) <- dataN
+g<-ggplot(data, aes(Name,FGP))
+g+geom_bar(stat = "identity", aes(fill=Position))+xlab("Player") + 
+  ylab("FGP")+ggtitle("Player Field Goal Percentage Per Game (FGP)")+coord_flip()+
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
