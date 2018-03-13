@@ -1,0 +1,69 @@
+---
+title: "Week 3"
+author: "Jonathan Franks"
+date: "January 28, 2018"
+output: html_document
+---
+##Week Three
+
+###Problem 1
+```{r echo=TRUE}
+#git clone https://github.com/caesar0301/awesome-public-datasets
+#cd awesome-public-datasets
+```
+
+Simply typing "git clone https://github.com/caesar0301/awesome-public-datasets" in git bash will create a new directory called "awesome-public-datasets" in the current directory.
+To change directories "cd" can be used followed by the folder name.
+In windows command line, "mkdir" followed by desired folder name will create that directory.
+
+###Problem 2
+####Part A
+```{r echo=TRUE}
+df <- read.csv(file="titanic.csv")
+```
+
+####Part B
+```{r echo=TRUE}
+library('plyr')
+count(df,'Sex')
+```
+#####Part C
+```{r echo=TRUE}
+db <- data.frame(df$Survived,df$Age,df$Fare)
+apply(db,2,mean,na.rm=TRUE)
+```
+
+
+###Problem 3
+```{r echo=TRUE}
+data <- read.csv("sleep_data_01.csv")
+```
+
+
+####Parts A-D
+
+```{r echo=TRUE}
+sleep <- function(x){
+  medianAge <- mean(x$Age, na.rm=TRUE)
+  maxSleep <- max(x$Duration, na.rm=TRUE)
+  minSleep <- min(x$Duration, na.rm=TRUE)
+  stdRSES <- sd(x$RSES, na.rm=TRUE) / 5
+  medianRSES <-mean(x$RSES, na.rm=TRUE) / 5
+  range <- maxSleep - minSleep
+  
+  
+  report <- data.frame(medianAge,medianRSES,stdRSES,range)
+  colnames(report) <- c("MedianAge","SelfEsteem","SE_SD","DurationRange")
+  apply(report,2,round, digits=2) 
+      
+}
+```
+
+####Part E
+```{r echo=TRUE}
+sleep(data)
+```
+
+
+
+

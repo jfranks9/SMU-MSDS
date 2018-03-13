@@ -4,6 +4,14 @@ author: "Jonathan Franks"
 date: "March 12, 2018"
 output: html_document
 ---
+####Load Library files
+```{r}
+library("rvest")   # Great for grabbing and parsing HTML
+library("dplyr")   # Easy transformation of data.frames for summarization
+library("tidyr")   # Nice way to arrange data
+library("ggplot2") # Excellent for visuals
+```
+
 
 ###Question 1 "Harry Potter Cast"
 ```{r}
@@ -45,8 +53,8 @@ head(Final,10)
 
 ```{r}
 # Pulling from online - part a
-url <- 'http://www.espn.com/nba/team/stats/_/name/sa/san-antonio-spurs'
-webpage<- read_html(url)
+url2 <- 'http://www.espn.com/nba/team/stats/_/name/sa/san-antonio-spurs'
+webpage<- read_html(url2)
 # Identifying HTML nodes - part b
 SS_table<-html_nodes(webpage,xpath='//*[@id="my-players-table"]/div[3]/div[3]/table')
 SS<-html_table(SS_table)
