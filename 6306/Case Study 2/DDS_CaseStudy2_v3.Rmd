@@ -1,0 +1,316 @@
+---
+title: "DDS_CaseStudy2"
+author: "Shanqing Gu"
+date: "4/1/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Step_01: Get access to CaseStudy2.csv data
+
+```{r Step_01}
+setwd("C:/Users/Jfranks9/Dropbox/Classes/6306 Doing Data Science/Case Study 2")
+cs2 <- read.csv("CaseStudy2-data.csv")
+head(cs2)
+str(cs2)
+```
+```{r add_libs}
+library(caret)
+library(ggplot2)
+library(caret)
+library(plyr)
+library(dplyr)
+library(visreg)
+#library(glmnet)
+library(rpart)
+library(randomForest)
+library(nnet)
+library(devtools)
+library(rpart.plot)
+```
+
+Exploratory Data Analysis
+```{r EDA_1}
+nearZeroVar(cs2) 
+head(cs2[9])
+head(cs2[22])
+head(cs2[27])
+# These features with no variation are Over18, EmployeeCount and StandardHours
+# We will drop these fields
+# Additionally EmployeeNumber is an integer but with no meaning for modeling 
+# we'll null it out as well so that it doesn't negatively impact the model column 10
+
+cs2$Over18 <- NULL
+cs2$EmployeeCount <- NULL
+cs2$StandardHours <- NULL
+cs2$EmployeeNumber <- NULL
+
+```
+OverTime is a likely candidate for driving attrition
+```{r EDA_2}
+table(cs2$Attrition)
+
+# calculation the frequencies
+prop.table(table(cs2$OverTime))
+#calc frequencies with ddply
+Overtime_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(OverTime)/length(OverTime),2))))
+head(Overtime_per)
+
+#plot categorical values against Attrition
+
+  ggplot(cs2, aes(Attrition, ..count.., fill = factor(OverTime))) + geom_bar(position="dodge")
+
+  ggplot(cs2, aes(Attrition, ..count.., fill = factor(BusinessTravel))) + geom_bar(position="dodge") 
+  
+  ggplot(cs2, aes(Attrition, ..count.., fill = factor(EducationField))) + geom_bar(position="dodge") 
+    
+  ggplot(cs2, aes(Attrition, ..count.., fill = factor(JobRole))) + geom_bar(position="dodge") 
+      
+  ggplot(cs2, aes(Attrition, ..count.., fill = factor(MaritalStatus))) + geom_bar(position="dodge") 
+
+```
+
+```{r EDA_frequencies}
+#table(cs2$MaritalStatus, cs2$Attrition)
+
+OverTime_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(OverTime)/length(OverTime),2))))
+print(OverTime_per)
+
+BizTravel_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(BusinessTravel)/length(BusinessTravel),2))))
+print(BizTravel_per)
+
+Ed_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(EducationField)/length(EducationField),2))))
+print(Ed_per)
+
+JobRole_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(JobRole)/length(JobRole),2))))
+print(JobRole_per)
+
+Marriage_per<- ddply(cs2,.(Attrition), 
+    function(x) with(x,
+      data.frame(100*round(table(MaritalStatus)/length(MaritalStatus),2))))
+print(Marriage_per)
+
+```
+Standout categorical features based on exploration:
+Single are more likely to leave than married
+Sales Reps have high attrition
+People that Travel Frequently are more likely to leave than those that don't
+People that work OverTime are more likely to leave
+
+Integer Feature Exploration
+```{r EDA_4}
+
+summary(cs2$MonthlyIncome)
+
+#cut income into decile groups
+IncomeDeciles <- cut(cs2$MonthlyIncome, 10, include.lowest = TRUE, labels=c(1,2,3,4,5,6,7,8,9,10))
+
+ggplot(cs2, aes(IncomeDeciles, ..count.., fill = factor(Attrition))) + geom_bar(position="dodge") + labs(title= "Lowest Deciles Show High Attrition ")
+
+TtlWkgYrs <- cut(cs2$TotalWorkingYears, 10, include.lowest = TRUE)
+ggplot(cs2, aes(TtlWkgYrs, ..count.., fill = factor(Attrition))) +
+labs(title= "Attrition Declines over Time") + geom_bar(position="dodge")
+
+```
+
+Modeling Section
+
+####  Step_02: GLM model of this data after removing 3 variables (EmployeeCount, Over18, StandardHours) due to less than 2 levels
+
+```{r Step_02}
+cs2.glm <- glm(formula = Attrition ~., family="binomial" , data=cs2[, -c(9, 22, 27)])
+summary(cs2.glm)
+```
+
+#### Step_03: Model selection: likelihood ratio test
+
+```{r Step_03}
+cs2.anova=anova(cs2.glm, test="Chisq")
+summary(cs2.anova)
+```
+
+#### Step_04: list 3 top factor that contribute to turnover: BusinessTravel$ Frequently, MartialStatus$Single, OverTime.
+
+```{r Step_04}
+#par(mfrow=c(4,4))
+#visreg(cs2.glm, c("BusinessTravel","DailyRate", "JobLevel", "MaritalStatus", "OverTime", "EnvironmentSatisfaction", "JobInvolvement", "JobSatisfaction", "NumCompaniesWorked", "YearsSinceLastPromotion"), scale="response")
+```
+
+#### Step_05: Density estimation plots summarize the distribution of the data
+```{r Step_05}
+#featurePlot(x=cs2[,c(11,14,17,21,34,35)], y=cs2$Attrition, plot="density", scales=list(x=list(relation="free"), y=list(relation="free")), auto.key=list(columns=6))
+
+# Just for data visualization purpose.
+```
+
+#### Step_06: Try glmnet (lasso and elastic-net regulated generalized linear models) 
+
+```{r Step_06}
+
+ y=cs2$Attrition
+ x=model.matrix(Attrition~., cs2[, -c(9, 22, 27)])
+ 
+ cvfit <- cv.glmnet(x, y, family = "binomial", type.measure = "class", nlambda=100)
+ 
+ plot(cvfit) # show cross-validation curve (red dotted line)
+ 
+ coef(cvfit, s = "lambda.min")
+ 
+ fit.pred <- predict(cvfit, newx = x, type = "response")
+ 
+ #Compare the prediction to the real outcome
+ head(fit.pred)
+ head(y)
+ 
+ #Create ROC curves
+ library(ROCR)
+ 
+ #Create ROC curves
+ pred <- prediction(fit.pred[,1], y)
+ roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
+ auc.perf <- performance(pred, measure = "auc")
+ auc.perf <- auc.perf@y.values
+ 
+ #Plot ROC
+ plot(roc.perf)
+ abline(a=0, b= 1) #Ref line indicating poor performance
+ text(x = .40, y = .6, paste("AUC = ", round(auc.perf[[1]],3), sep = ""))
+```
+### Step_07 Baseline Model
+```{r}
+table(cs2$Attrition)
+
+1233/nrow(cs2)
+
+```
+
+Assuming all cases are 'No' provides 83.8% accuracy.
+
+
+### Step_08 Create Training and Test Data Sets
+```{r}
+#Remove NA/NULL Rows to prevent contrast/factor errors in modeling
+rem <- c(9,10,22,27)
+dat <-cs2[,-rem]
+dim(dat)
+indexes = sample(1:nrow(cs2), size=0.2*nrow(cs2))
+test = dat[indexes,]
+dim(test)  
+train = dat[-indexes,]
+dim(train)
+
+```
+
+### Step_09 Create Cart Model
+```{r}
+modelCart = rpart(Attrition ~ ., data=train, method="class")
+#Plot the model
+prp(modelCart)
+
+#Predict the test data
+predictionCart <- predict(modelCart, newdata=test, type="class")
+
+#CART Accuracy
+#Confusion matrix 
+t1 <- table(test$Attrition, predictionCart)
+
+
+#CART model accuracy
+(t1[1]+t1[4])/(nrow(test))
+
+```
+
+###Step_10 Create Random Forrest Model
+```{r}
+modelRf = randomForest(Attrition ~ ., data=train, ntree = 100, mtry = 5, importance = TRUE, method="class")
+#Plot the model
+print(modelRf)
+#OOB vs No. Of Trees
+plot(modelRf, main="")
+legend("topright", c("OOB", "0", "1"), text.col=1:6, lty=1:3, col=1:3)
+title(main="Error Rates Random Forest")
+## List the importance of the variables.
+impVar <- round(randomForest::importance(modelRf), 2)
+impVar[order(impVar[,3], decreasing=TRUE),]
+```
+
+```{r}
+## Tuning Random Forest
+tunedRf <- tuneRF(x = train[,-2], 
+              y=as.factor(train$Attrition),
+              mtryStart = 5, 
+              ntreeTry=60, 
+              stepFactor = 2, 
+              improve = 0.001, 
+              trace=TRUE, 
+              plot = TRUE,
+              doBest = TRUE,
+              nodesize = 5, 
+              importance=TRUE
+)
+
+impvarTunedRf <- tunedRf$importance
+impvarTunedRf[order(impvarTunedRf[,3], decreasing=TRUE),]
+
+predictionRf <- predict(tunedRf, test, type="class")
+
+#RandomForest Accuracy
+#Confusion matrix 
+t2 <- table(test$Attrition, predictionRf)
+
+#RandomForest model accuracy
+(t2[1]+t2[4])/(nrow(test))
+
+
+```
+
+
+###Step_11 Create Neural Network Model
+```{r}
+library(nnet)
+set.seed(777)
+modelNN<-nnet(Attrition~.,train,size=21,rang=0.07,Hess=FALSE,decay=15e-4,maxit=2000)
+predictionNN<-predict(modelNN,test,type=("class"))
+table(predictionNN)
+plot.nnet(modelNN)
+#DevTools
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+#Counfusion Matrix
+t3 <- table(test$Attrition, predictionNN)
+
+#NeuralNetwork model accuracy
+(t3[1]+t3[4])/(nrow(test))
+```
+
+###Step_12 Creating an Ensemble 
+```{r}
+
+predictions <- data.frame(predictionCart= predictionCart, predictionRf = predictionRf,
+                          predictionNN = predictionNN)
+
+predictions$predictionEnsemble <- as.factor(ifelse(predictions$predictionCart=='Yes' &
+                                   predictions$predictionRf=='Yes','Yes',ifelse(predictions$predictionCart=='Yes' & predictions$predictionNN=='Yes','Yes',ifelse(predictions$predictionRf=='Yes' &                             predictions$predictionNN=='Yes','Yes','No'))))
+
+#Confusion Matrix
+t4 <- table(test$Attrition, predictions$predictionEnsemble)
+
+#Ensembeling Accuracy
+(t4[1]+t4[4])/(nrow(test))
+
+```
+
+
+
